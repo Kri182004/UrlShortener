@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            margin: 40px auto;
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f8ff;
+            color: #0056b3;
+            cursor: pointer; /* To suggest sorting */
+        }
+        .short-url a {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .long-url {
+            max-width: 350px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Your Short Link Dashboard</h1>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Short Link</th>
+                    <th>Original URL</th>
+                    <th>Clicks</th>
+                </tr>
+            </thead>
+            <tbody id="dashboard-body">
+                <tr><td colspan="3" style="text-align: center;">Loading data...</td></tr>
+            </tbody>
+        </table>
+
+        <div id="status-message" style="margin-top: 20px; text-align: center; color: #d93025;"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/all-links';
+
+        document.addEventListener('DOMContentLoaded', fetchDashboardData);
+
+        async function fetchDashboardData() {
+            const dashboardBody = document.getElementById('dashboard-body');
+            const statusMessage = document.getElementById('status-message');
+            
+            dashboardBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Loading data...</td></tr>';
+            statusMessage.textContent = '';
+
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json(); // Expecting JSON array
+
+                if (response.ok) {
+                    displayDashboard(data);
+                } else {
+                    statusMessage.textContent = `API Error: ${data.message || 'Could not fetch data.'}`;
+                    dashboardBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #d93025;">Failed to load links.</td></tr>';
+                }
+            } catch (error) {
+                console.error('Network Error:', error);
+                statusMessage.textContent = 'Network Error: The server may be down.';
+                dashboardBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #d93025;">Server not reachable.</td></tr>';
+            }
+        }
+
+        function displayDashboard(links) {
+            const dashboardBody = document.getElementById('dashboard-body');
+            dashboardBody.innerHTML = ''; 
+
+            if (links.length === 0) {
+                dashboardBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">You have not created any links yet.</td></tr>';
+                return;
+            }
+
+            links.forEach(link => {
+                const row = dashboardBody.insertRow();
+                const shortUrl = `http://localhost:8080/r/${link.shortCode}`;
+                
+                // Short Link Cell
+                row.insertCell().innerHTML = `<div class="short-url"><a href="${shortUrl}" target="_blank">${shortUrl}</a></div>`;
+                
+                // Original URL Cell
+                row.insertCell().innerHTML = `<div class="long-url" title="${link.longUrl}">${link.longUrl}</div>`;
+                
+                // Clicks Cell
+                row.insertCell().textContent = link.clickCount;
+            });
+        }
+    </script>
+</body>
+</html>

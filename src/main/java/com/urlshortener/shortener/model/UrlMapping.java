@@ -26,6 +26,11 @@ public class UrlMapping {
 
     @Column(nullable = false, length = 2048)//tells jpa that this field is a column in the database table, cannot be null, and has a maximum length of 2048 characters
     private String longUrl;
+    // ... inside UrlMapping class ...
+    @Column(nullable = false)
+    private long clickCount = 0; // New field to track clicks
+    
+    // ... rest of the code ...
 
     public UrlMapping(String shortCode, String longUrl) {
         this.shortCode = shortCode;

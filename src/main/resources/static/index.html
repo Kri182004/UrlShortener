@@ -14,6 +14,8 @@
             color: #333;
         }
         .container {
+            /* Added position: relative for absolute positioning of the button */
+            position: relative;
             background: #ffffff;
             padding: 2rem 3rem;
             border-radius: 12px;
@@ -28,7 +30,6 @@
         .input-group {
             display: flex;
             gap: 0.5rem;
-            margin-top: 1.5rem;
         }
         #longUrlInput, #customCodeInput {
             flex-grow: 1;
@@ -74,6 +75,7 @@
             color: #d93025;
             font-weight: bold;
         }
+        /* Copy Button Styles */
         #copyBtn {
             padding: 0.25rem 0.75rem;
             font-size: 0.9rem;
@@ -92,6 +94,20 @@
             color: white;
             border-color: #28a745;
         }
+        /* Activity Button Positioning */
+        #activityBtn {
+            position: absolute;
+            top: 25px; 
+            right: 30px; 
+            text-decoration: none;
+            padding: 5px 15px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            background-color: #f0f8ff;
+            color: #007bff;
+            font-size: 0.9em;
+            transition: background-color 0.3s;
+        }
     </style>
 </head>
 <body>
@@ -99,6 +115,10 @@
     <div class="container">
         <h1>Tiny URL Shortener</h1>
         
+        <a href="dashboard.html" id="activityBtn" onmouseover="this.style.backgroundColor='#e6f2ff';" onmouseout="this.style.backgroundColor='#f0f8ff';">
+            Your Activity
+        </a>
+
         <div class="input-group" style="margin-bottom: 0.5rem; margin-top: 1rem;">
             <input type="text" id="customCodeInput" placeholder="Optional: Custom short code (e.g., my-link)">
         </div>
@@ -161,7 +181,7 @@
                     document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
 
                 } else {
-                    // --- NEW ERROR LOGIC: Read the specific error message from the server ---
+                    // Read the specific error message from the server
                     const errorMessage = await response.text(); 
                     resultDiv.className = 'error';
                     resultDiv.textContent = `Error: ${errorMessage}`;
@@ -200,7 +220,7 @@
             } catch (_) {
                 return false;  
             }
-            return url.protocol === "http:" || url.protocol === "https:"; // Removed FTP, stuck to web protocols
+            return url.protocol === "http:" || url.protocol === "https:";
         }
     </script>
 </body>

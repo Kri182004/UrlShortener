@@ -57,11 +57,21 @@ public class UrlShortenerService {
     /**
      * Retrieves the long URL associated with a given short code.
      */
+    /**
+     * Retrieves the long URL associated with a given short code and increments the click counter.
+     */
     public String getLongUrl(String shortCode) {
-        // Find the mapping by short code. If it doesn't exist, throw an exception.
+        // 1. Find the mapping. If not found, throws exception (existing logic)
         UrlMapping mapping = urlMappingRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new RuntimeException("Short code not found: " + shortCode));
         
+        // 2. INCREMENT THE COUNTER
+        mapping.setClickCount(mapping.getClickCount() + 1);
+
+        // 3. Save the updated mapping back to the database
+        urlMappingRepository.save(mapping);
+        
+        // 4. Return the long URL for redirection (existing logic)
         return mapping.getLongUrl();
     }
 

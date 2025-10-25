@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Analytics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 40px auto;
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .link-info {
+            background-color: #e9f5ff;
+            border-left: 5px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .link-info p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        .link-info strong {
+            font-weight: bold;
+            color: #333;
+            display: inline-block;
+            width: 100px;
+        }
+        .metric {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .metric h2 {
+            margin: 0;
+            font-size: 3em;
+            color: #28a745;
+        }
+        .metric p {
+            margin-top: 5px;
+            font-size: 1em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Analytics Dashboard</h1>
+        
+        <div class="input-group" style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="shortCodeInput" placeholder="Enter Short Code (e.g., clicks-test)" 
+                   style="flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <button id="fetchBtn" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">View Analytics</button>
+        </div>
+
+        <div id="analytics-data">
+            <p style="text-align: center; color: #6c757d;">Enter a short code above to view its click statistics.</p>
+        </div>
+    </div>
+
+    </body>
+    <script>
+        document.getElementById('fetchBtn').addEventListener('click', fetchAnalytics);
+
+        async function fetchAnalytics() {
+            const shortCode = document.getElementById('shortCodeInput').value.trim();
+            const dataDiv = document.getElementById('analytics-data');
+            
+            if (!shortCode) {
+                dataDiv.innerHTML = '<p style="color: #d93025; text-align: center;">Please enter a short code.</p>';
+                return;
+            }
+
+            dataDiv.innerHTML = '<p style="text-align: center;">Loading...</p>';
+
+            try {
+                // Call the corrected API endpoint
+                const apiUrl = `/api/r/${shortCode}/clicks`;
+                const response = await fetch(apiUrl);
+                
+                // Get the response body as text first to handle errors
+                const responseText = await response.text();
+
+                if (response.ok) {
+                    // If OK (200), parse the JSON we created
+                    const data = JSON.parse(responseText);
+                    displayAnalytics(data);
+                } else {
+                    // If ERROR (404, 400), display the plain error message from the Java controller
+                    dataDiv.innerHTML = `<p style="color: #d93025; text-align: center;">Error: ${responseText}</p>`;
+                }
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                dataDiv.innerHTML = '<p style="color: #d93025; text-align: center;">Network error: Could not connect to API.</p>';
+            }
+        }
+
+        function displayAnalytics(data) {
+            const dataDiv = document.getElementById('analytics-data');
+            
+            dataDiv.innerHTML = `
+                <div class="link-info">
+                    <p><strong>Short Code:</strong> ${data.shortCode}</p>
+                    <p><strong>Original URL:</strong> <a href="${data.longUrl}" target="_blank">${data.longUrl}</a></p>
+                </div>
+
+                <div class="metric">
+                    <h2>${data.clickCount}</h2>
+                    <p>Total Clicks</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+</html>
