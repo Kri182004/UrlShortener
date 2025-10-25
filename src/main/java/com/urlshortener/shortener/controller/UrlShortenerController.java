@@ -34,10 +34,11 @@ public class UrlShortenerController {
     @PostMapping("/api/shorten")
     public ResponseEntity<String> shortenUrl(
             @RequestParam String longUrl,
-            @RequestParam(required = false) String customCode) {
+            @RequestParam(required = false) String customCode,
+            @RequestParam(required = false) Integer expirationHours) {
         
         // Calls the service with both URL and optional custom code
-        String shortCode = urlShortenerService.shortenUrl(longUrl, customCode);
+        String shortCode = urlShortenerService.shortenUrl(longUrl, customCode,expirationHours);
 
         // Returns the full short URL using the /r/ prefix
         String shortUrl = "http://localhost:8080/r/" + shortCode;

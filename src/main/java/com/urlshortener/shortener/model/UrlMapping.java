@@ -1,5 +1,7 @@
 package com.urlshortener.shortener.model;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -30,6 +32,8 @@ public class UrlMapping {
     @Column(nullable = false)
     private long clickCount = 0; // New field to track clicks
     
+    @Column(nullable = true) // Nullable because not all links expire
+private LocalDateTime expiresAt;
     // ... rest of the code ...
 
     public UrlMapping(String shortCode, String longUrl) {

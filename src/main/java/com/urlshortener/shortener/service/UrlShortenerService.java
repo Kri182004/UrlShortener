@@ -4,7 +4,9 @@ import com.urlshortener.shortener.model.UrlMapping;
 import com.urlshortener.shortener.repository.UrlMappingRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Random; // <-- This is the crucial import you were missing!
+import java.time.LocalDateTime;
+import java.util.Random; 
+import java.util.stream.Collectors;
 
 @Service
 public class UrlShortenerService {
@@ -24,7 +26,7 @@ public class UrlShortenerService {
     /**
      * Creates a short URL for the given long URL, optionally using a custom short code.
      */
-    public String shortenUrl(String longUrl, String customCode) {
+    public String shortenUrl(String longUrl, String customCode,Integer expirationHours) {
         String finalCode;
         
         if (customCode != null && !customCode.isEmpty()) {
@@ -49,6 +51,9 @@ public class UrlShortenerService {
 
         // Save the new mapping using the final code (either custom or random)
         UrlMapping newMapping = new UrlMapping(finalCode, longUrl);
+        if (expirationHours != null && expirationHours > 0) {
+        // Calculates the exact time the link should expire
+newMapping.setExpiresAt(LocalDateTime.now().plusHours(expirationHours));    }
         urlMappingRepository.save(newMapping);
 
         return finalCode;
@@ -70,7 +75,9 @@ public class UrlShortenerService {
 
         // 3. Save the updated mapping back to the database
         urlMappingRepository.save(mapping);
-        
+        if (mapping.getExpiresAt() != null && mapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+        throw new RuntimeException("Short link has expired and is no longer active.");
+    }
         // 4. Return the long URL for redirection (existing logic)
         return mapping.getLongUrl();
     }
