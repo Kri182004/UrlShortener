@@ -30,7 +30,7 @@
             gap: 0.5rem;
             margin-top: 1.5rem;
         }
-        #longUrlInput {
+        #longUrlInput, #customCodeInput {
             flex-grow: 1;
             padding: 0.75rem;
             font-size: 1rem;
@@ -38,7 +38,7 @@
             border-radius: 6px;
             transition: border-color 0.3s;
         }
-        #longUrlInput:focus {
+        #longUrlInput:focus, #customCodeInput:focus {
             border-color: #007bff;
             outline: none;
         }
@@ -57,7 +57,7 @@
             background-color: #0056b3;
         }
         
-        /* --- NEW STYLES --- */
+        /* Result Styles */
         #result {
             margin-top: 2rem;
             text-align: center;
@@ -75,7 +75,6 @@
             font-weight: bold;
         }
         #copyBtn {
-            display: none; /* Hide by default */
             padding: 0.25rem 0.75rem;
             font-size: 0.9rem;
             color: #007bff;
@@ -93,8 +92,6 @@
             color: white;
             border-color: #28a745;
         }
-        /* --- END NEW STYLES --- */
-
     </style>
 </head>
 <body>
@@ -102,7 +99,11 @@
     <div class="container">
         <h1>Tiny URL Shortener</h1>
         
-        <div class="input-group">
+        <div class="input-group" style="margin-bottom: 0.5rem; margin-top: 1rem;">
+            <input type="text" id="customCodeInput" placeholder="Optional: Custom short code (e.g., my-link)">
+        </div>
+        
+        <div class="input-group" style="margin-top: 0;">
             <input type="url" id="longUrlInput" placeholder="Paste your long URL here...">
             <button id="shortenBtn">Shorten</button>
         </div>
@@ -115,77 +116,83 @@
         const shortenBtn = document.getElementById('shortenBtn');
         const longUrlInput = document.getElementById('longUrlInput');
         const resultDiv = document.getElementById('result');
-        let currentShortUrl = ''; // Store the URL for the copy button
+        let currentShortUrl = '';
 
         shortenBtn.addEventListener('click', async () => {
             const longUrl = longUrlInput.value;
+            const customCode = document.getElementById('customCodeInput').value.trim();
             
             if (!longUrl || !isValidHttpUrl(longUrl)) {
                 resultDiv.className = 'error';
-                resultDiv.textContent = 'Please enter a valid URL (e.g., https://...)';
+                resultDiv.textContent = 'Please enter a valid URL (must start with http:// or https://)';
                 return;
             }
 
             resultDiv.innerHTML = 'Shortening...';
             resultDiv.className = '';
-            currentShortUrl = ''; // Clear old URL
+            currentShortUrl = '';
 
             try {
-                const apiUrl = `/api/shorten?longUrl=${encodeURIComponent(longUrl)}`;
+                // Start building the API URL with the longUrl
+                let apiUrl = `/api/shorten?longUrl=${encodeURIComponent(longUrl)}`;
+
+                // Add the customCode if it exists
+                if (customCode) {
+                    apiUrl += `&customCode=${encodeURIComponent(customCode)}`;
+                }
+                
+                // Call our Spring Boot API
                 const response = await fetch(apiUrl, {
                     method: 'POST'
                 });
 
                 if (response.ok) {
                     const shortUrl = await response.text();
-                    currentShortUrl = shortUrl; // Save for copy button
+                    currentShortUrl = shortUrl;
                     
-                    // Display the link and the new copy button
+                    // Display the link and the copy button
                     resultDiv.innerHTML = `
                         Your short URL is: 
                         <a href="${shortUrl}" id="result-link" target="_blank">${shortUrl}</a>
                         <button id="copyBtn">Copy</button>
                     `;
 
-                    // --- NEW: Add event listener to the new copy button ---
+                    // Add event listener to the new copy button
                     document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
-                    // --- END NEW ---
 
                 } else {
+                    // --- NEW ERROR LOGIC: Read the specific error message from the server ---
+                    const errorMessage = await response.text(); 
                     resultDiv.className = 'error';
-                    resultDiv.textContent = 'Error: Could not shorten URL. Server responded with an error.';
+                    resultDiv.textContent = `Error: ${errorMessage}`;
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Network Error:', error);
                 resultDiv.className = 'error';
                 resultDiv.textContent = 'Error: Could not connect to the server.';
             }
         });
         
-        // --- NEW: Function to handle copying ---
         function copyToClipboard() {
             if (!currentShortUrl) return;
 
             navigator.clipboard.writeText(currentShortUrl).then(() => {
-                // Success! Give user feedback
                 const copyBtn = document.getElementById('copyBtn');
                 copyBtn.textContent = 'Copied!';
-                copyBtn.className = 'copied'; // Apply 'copied' style
+                copyBtn.className = 'copied';
                 
-                // Revert button text after 2 seconds
                 setTimeout(() => {
                     copyBtn.textContent = 'Copy';
                     copyBtn.className = '';
                 }, 2000);
 
             }).catch(err => {
-                // Handle potential clipboard errors
                 console.error('Failed to copy: ', err);
-                resultDiv.innerHTML += ' <span class="error">(Copy failed)</span>';
+                // Fallback for older browsers
+                resultDiv.innerHTML += ' <span class="error">(Manual copy required)</span>';
             });
         }
         
-        // --- NEW: Simple helper function for URL validation ---
         function isValidHttpUrl(string) {
             let url;
             try {
@@ -193,7 +200,7 @@
             } catch (_) {
                 return false;  
             }
-            return url.protocol === "http:" || url.protocol === "https:" || url.protocol === "ftp:";
+            return url.protocol === "http:" || url.protocol === "https:"; // Removed FTP, stuck to web protocols
         }
     </script>
 </body>

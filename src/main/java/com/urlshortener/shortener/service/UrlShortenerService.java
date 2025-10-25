@@ -1,56 +1,78 @@
 package com.urlshortener.shortener.service;
 
-import java.util.Random;
-
-import org.springframework.stereotype.Service;
-
 import com.urlshortener.shortener.model.UrlMapping;
 import com.urlshortener.shortener.repository.UrlMappingRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.Random; // <-- This is the crucial import you were missing!
 
 @Service
 public class UrlShortenerService {
-    private final UrlMappingRepository urlMappingRepository;
-    private static final String CHARACTERS= "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final int CODE_LENGTH=7;
-    private final Random random=new Random();
-    //constructor based ddependency injection
-    public UrlShortenerService(UrlMappingRepository urlMappingRepository){
-        this.urlMappingRepository=urlMappingRepository;
-    }
-    /**it creates a short URL for the given long URLs
-     * Generates a unique shortcode and saves the mapping in the database
-     */
-    public String shortenUrl(String longUrl){
-        String shortCode;
-    //keep generating short codes until we find a unique one
-        do{
-            shortCode=generateShortCode();
-        }while(urlMappingRepository.existsByShortCode(shortCode));
-        urlMappingRepository.save(new UrlMapping(shortCode,longUrl));
-        return shortCode;
-    }
-    /**
-     * Helper method to generate a random alphanumeric short code
-     */
-    private String generateShortCode(){
-        StringBuilder codeBuilder=new StringBuilder();
-        for(int i=0;i<CODE_LENGTH;i++){
-            codeBuilder.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
-        }
-        return codeBuilder.toString();
 
+    // These fields are needed for the random code generation
+    private static final String CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int CODE_LENGTH = 7;
+    private final Random random = new Random();
+
+    private final UrlMappingRepository urlMappingRepository;
+
+    // Constructor-based dependency injection
+    public UrlShortenerService(UrlMappingRepository urlMappingRepository) {
+        this.urlMappingRepository = urlMappingRepository;
     }
+
+    /**
+     * Creates a short URL for the given long URL, optionally using a custom short code.
+     */
+    public String shortenUrl(String longUrl, String customCode) {
+        String finalCode;
+        
+        if (customCode != null && !customCode.isEmpty()) {
+            // Case 1: Custom code was provided
+            finalCode = customCode;
+
+            // Validation: Custom code cannot have spaces, must be a decent length, and alphanumeric
+            if (finalCode.length() < 3 || finalCode.contains(" ") || !finalCode.matches("[a-zA-Z0-9_-]+")) {
+                throw new RuntimeException("Custom code must be at least 3 characters and can only contain letters, numbers, hyphens, or underscores.");
+            }
+
+            // Check if it's already taken in the database
+            if (urlMappingRepository.existsByShortCode(finalCode)) {
+                throw new RuntimeException("Custom short code '" + finalCode + "' is already taken.");
+            }
+        } else {
+            // Case 2: No custom code, generate a random one (Existing logic)
+            do {
+                finalCode = generateShortCode();
+            } while (urlMappingRepository.existsByShortCode(finalCode));
+        }
+
+        // Save the new mapping using the final code (either custom or random)
+        UrlMapping newMapping = new UrlMapping(finalCode, longUrl);
+        urlMappingRepository.save(newMapping);
+
+        return finalCode;
+    }
+
     /**
      * Retrieves the long URL associated with a given short code.
      */
     public String getLongUrl(String shortCode) {
-        // Find the mapping by short code.
-        // We use the findByShortCode method we defined in the repository.
+        // Find the mapping by short code. If it doesn't exist, throw an exception.
         UrlMapping mapping = urlMappingRepository.findByShortCode(shortCode)
-                // If it doesn't exist, throw an exception.
                 .orElseThrow(() -> new RuntimeException("Short code not found: " + shortCode));
         
-        // If it *does* exist, return the longUrl from the mapping object.
         return mapping.getLongUrl();
+    }
+
+    /**
+     * Helper method to generate a random alphanumeric string of CODE_LENGTH.
+     */
+    private String generateShortCode() {
+        StringBuilder codeBuilder = new StringBuilder();
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            codeBuilder.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
+        }
+        return codeBuilder.toString();
     }
 }
