@@ -53,10 +53,10 @@ public class UrlShortenerService {
         UrlMapping newMapping = new UrlMapping(finalCode, longUrl);
         if (expirationHours != null && expirationHours > 0) {
         // Calculates the exact time the link should expire
-newMapping.setExpiresAt(LocalDateTime.now().plusHours(expirationHours));    }
-        urlMappingRepository.save(newMapping);
-
-        return finalCode;
+// TEMPORARY TEST CODE: Link expires in 5 seconds
+// REVERTED CODE (CRITICAL!): Use plusHours(expirationHours)
+// REVERTED CODE (CRITICAL!): Use plusHours(expirationHours)
+newMapping.setExpiresAt(java.time.LocalDateTime.now().plusHours(expirationHours));        return finalCode;
     }
 
     /**
@@ -65,20 +65,27 @@ newMapping.setExpiresAt(LocalDateTime.now().plusHours(expirationHours));    }
     /**
      * Retrieves the long URL associated with a given short code and increments the click counter.
      */
+    /**
+     * Retrieves the long URL associated with a given short code and increments the click counter.
+     */
     public String getLongUrl(String shortCode) {
-        // 1. Find the mapping. If not found, throws exception (existing logic)
+        // 1. Find the mapping. If not found, throws exception
         UrlMapping mapping = urlMappingRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new RuntimeException("Short code not found: " + shortCode));
         
-        // 2. INCREMENT THE COUNTER
+        // 2. CHECK EXPIRATION FIRST (MOVED HERE)
+        if (mapping.getExpiresAt() != null && mapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+            // Throw the expiration error *before* counting the click
+            throw new RuntimeException("Short link has expired and is no longer active.");
+        }
+        
+        // 3. INCREMENT THE COUNTER (Only if not expired)
         mapping.setClickCount(mapping.getClickCount() + 1);
 
-        // 3. Save the updated mapping back to the database
+        // 4. Save the updated mapping back to the database
         urlMappingRepository.save(mapping);
-        if (mapping.getExpiresAt() != null && mapping.getExpiresAt().isBefore(LocalDateTime.now())) {
-        throw new RuntimeException("Short link has expired and is no longer active.");
-    }
-        // 4. Return the long URL for redirection (existing logic)
+        
+        // 5. Return the long URL for redirection
         return mapping.getLongUrl();
     }
 
